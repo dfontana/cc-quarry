@@ -13,6 +13,7 @@ function download(scriptPath, scriptName)
   print("Downloading "..scriptName)
   local file = fs.open(scriptName, "w")
   local uri = "https://raw.githubusercontent.com/dfontana/cc-quarry/"..BRANCH_NAME.."/"..scriptPath..".lua"
+  print("URI: "..uri)
   local str = http.get(uri).readAll()
   file.write(str)
   file.close()

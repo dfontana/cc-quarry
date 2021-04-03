@@ -18,6 +18,10 @@
 --
 -- Note: Be sure to label your turtles (`label set foo`) so you don't lose fuel or programs
 
+os.loadAPI("cc-quarry-arguments")
+os.loadAPI("cc-quarry-helpers")
+os.loadAPI("cc-quarry-primitives")
+os.loadAPI("cc-quarry-utils")
 
 -- Constants used to reset the turtle
 local ORIGIN_LOC = {x=0,y=0,z=0}
