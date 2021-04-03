@@ -36,6 +36,9 @@ local currentDir = 'N'
 local leftOffAtLoc = {x=0,y=0,z=0}
 local leftOffAtDir = 'N'
 
+-- TODO remove this hardcoding for configurable size
+local EDGE_SIZE = 2
+
 -- ===========================================================================
 -- =================        MAIN LOOP        =================================
 -- ===========================================================================
@@ -45,15 +48,14 @@ function mainLoop()
   -- 1. Refueling occurs too often, it slows us down
   -- 2. Items get placed where the cursor currently is. So things don't stack.
   -- 3. Below routine assumes even row counts.
-  -- 4. Need the Y routine. keeping in mind the starting loc on each layer will
+  -- 4. Never empties inventory until the end
+  -- 5. Need the Y routine. keeping in mind the starting loc on each layer will
   --      change which varies how the layer routine will work (E v W & N v S).
   --       Keep in mind you dig 3 tiles at a time, so you need to descend enough
-  -- 5. Never empties inventory.
-  -- 6. Doesn't dig down :big-think:
-  while currentLoc.x < 5 do
+  while currentLoc.x < EDGE_SIZE do
 
     print("[Main] Next Row!")
-    while currentLoc.z < 5 do
+    while currentLoc.z < EDGE_SIZE do
       print("[Main] Current Loc: {" .. currentLoc.z .. "," .. currentLoc.x .. "}")
       if digRoutine() == 1 then
         return
@@ -110,41 +112,36 @@ end
 -- false, otherwise true
 function dumpInventory()
   print("[Dump] Emptying Inventory")
-  leftOffAtLoc = currentLoc
+  copyLocToLoc(leftOffAtLoc, currentLoc)
   leftOffAtDir = currentDir
   goToLoc(ORIGIN_LOC, ORIGIN_DIR)
   rotate('E')
-  local invEmpty = false
   local notChest = false
   repeat
+    print("[Dump] Current Loc: {" .. currentLoc.z .. "," .. currentLoc.x .. "}")
     forward()
     rotate('S')
     -- are we looking at a chest?
     local success, data = turtle.inspect()
     if success == false or data.name ~= 'minecraft:chest' then
+      print("[Dump] No more chests, stopping")
       break
     end
     -- Dump inventory
     for i = 1, 16 do
       turtle.select(i)
-      -- Skip fuel items
-      if turtle.refuel(0) == false then
-        if turtle.drop() then
+      -- Skip fuel items && empty slots
+      if turtle.getItemCount() ~= 0 and turtle.refuel(0) == false then
+        if turtle.drop() == false then
           -- inventory is full, go to next
           break
         end
       end
     end
-    -- Check if inv is cleared of non-fueld items
-    for i = 1, 16 do
-      turtle.select(i)
-      -- Skip fuel items
-      if turtle.refuel(0) == false then
-        invEmpty = turtle.getItemCount() > 0 and invEmpty
-      end
-    end
     rotate('E')
-  until invEmpty or notChest
+  until notChest
+  print("[Dump] Stopped at Loc: {" .. currentLoc.z .. "," .. currentLoc.x .. "}")
+  print("[Dump] Home: {" .. ORIGIN_LOC.z .. "," .. ORIGIN_LOC.x .. "}")
   goToLoc(ORIGIN_LOC, ORIGIN_DIR)
 end
 
@@ -162,6 +159,8 @@ end
 
 -- Sends the turtle to the given loc and direction
 function goToLoc(loc, direction)
+  print("[goToLoc] Given: {" .. loc.z .. "," .. loc.x .. "}")
+  print("[goToLoc] From: {" .. currentLoc.z .. "," .. currentLoc.x .. "}")
   local xDiff = currentLoc.x - loc.x
   local xDir = xDiff > 0 and 'W' or 'E'
   travel(xDiff, xDir)
@@ -172,7 +171,7 @@ function goToLoc(loc, direction)
   local yDir = yDiff > 0 and 'D' or 'U'
   travel(yDiff, yDir)
   rotate(direction)
-  currentLoc = loc
+  copyLocToLoc(currentLoc, loc)
   currentDir = direction
 end
 
@@ -200,7 +199,6 @@ end
 -- Returns the number of items it was able to pick up
 -- If the turtle returns 0 enough its suggestive there's nothing left for it to fit
 function digForward() 
-  -- TODO you need to selet a slot when picking up an item
   local itemsPickedUp = 0
   local success, data = turtle.inspect()
   if success and canFitItem(data.name) then
@@ -224,7 +222,7 @@ end
 
 -- Travel the given number of units in the given direction
 -- units maybe positive or negative, it doesn't matter
-function travel(units, direction) 
+function travel(units, direction)
   if units ~= 0 then
     if direction == 'U' or direction == 'D' then
       -- Ensure travel is correct given sign
@@ -252,7 +250,6 @@ function rotate(direction)
   end
   turtle.turnLeft()
   currentDir = LEFT_DIR[currentDir]
-  print("[Rotate] To ".. direction.." from "..currentDir)
   rotate(direction)
 end
 
@@ -315,12 +312,18 @@ function refuel()
       end
     end
     if consumedSomething == false then
-      print("[Refuel] No more fuel to consume, exiting")
+      print("[Refuel] No more fuel to consume")
       break
     end
     newLevel = turtle.getFuelLevel()
     print("[Refuel] Fuel Level: " .. newLevel)
   until fuelLimit == newLevel or newLevel > fuelLimit * 0.75
+end
+
+function copyLocToLoc(a, b)
+  a.x = b.x
+  a.y = b.y
+  a.z = b.z
 end
 
 mainLoop()
