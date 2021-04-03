@@ -37,7 +37,7 @@ local leftOffAtLoc = {x=0,y=0,z=0}
 local leftOffAtDir = 'N'
 
 -- TODO remove this hardcoding for configurable size
-local EDGE_SIZE = 3
+local END_LOC = {x=3,y=0,z=3}
 
 -- ===========================================================================
 -- =================        MAIN LOOP        =================================
@@ -51,10 +51,11 @@ function mainLoop()
   -- 5. Need the Y routine. keeping in mind the starting loc on each layer will
   --      change which varies how the layer routine will work (E v W & N v S).
   --       Keep in mind you dig 3 tiles at a time, so you need to descend enough
-  while currentLoc.x < EDGE_SIZE do
-    local rowRotation = currentLoc.x % 2 == 0 and 'S' or 'N'
-    for i = 1, EDGE_SIZE do
-      print("[Main] "..i.." Loc: {" .. currentLoc.z .. "," .. currentLoc.x .. "}")
+  while currentLoc.x < END_LOC.x do
+    local isEvn = currentLoc.x % 2 == 0
+    local rowRotation = isEvn and 'S' or 'N'
+    while rowCheck(isEvn) do
+      print("[Main] Loc{" .. currentLoc.z .. "," .. currentLoc.x .. "}")
       if digRoutine() == 1 then
         return
       end
@@ -66,6 +67,14 @@ function mainLoop()
     rotate(rowRotation)
   end
   dumpInventory()
+end
+
+function rowCheck(isEvn) 
+  if isEvn then 
+    return currentLoc.z < END_LOC.z 
+  else 
+    return currentLoc.z > 0 
+  end
 end
 
 function digRoutine() 
@@ -82,9 +91,6 @@ function digRoutine()
       leftOffAtDir = currentDir
       dumpInventory()
       resume()
-      -- TODO this works to fix the resume bug, but EDGE size traversing seems to 
-      -- be the more unreliable bit of logic (fixed row sizes)
-      digForward()
     end
   else
     forward()
