@@ -37,7 +37,7 @@ local leftOffAtLoc = {x=0,y=0,z=0}
 local leftOffAtDir = 'N'
 
 -- TODO remove this hardcoding for configurable size
-local EDGE_SIZE = 2
+local EDGE_SIZE = 3
 
 -- ===========================================================================
 -- =================        MAIN LOOP        =================================
@@ -47,7 +47,6 @@ function mainLoop()
   -- DEFECTS
   -- 1. Refueling occurs too often, it slows us down
   -- 2. Items get placed where the cursor currently is. So things don't stack.
-  -- 3. Below routine assumes even row counts.
   -- 4. Never empties inventory until the end
   -- 5. Need the Y routine. keeping in mind the starting loc on each layer will
   --      change which varies how the layer routine will work (E v W & N v S).
@@ -55,7 +54,8 @@ function mainLoop()
   while currentLoc.x < EDGE_SIZE do
 
     print("[Main] Next Row!")
-    while currentLoc.z < EDGE_SIZE do
+    local rowRotation = currentLoc.x % 2 == 0 and 'S' or 'N'
+    for i = 1, EDGE_SIZE do
       print("[Main] Current Loc: {" .. currentLoc.z .. "," .. currentLoc.x .. "}")
       if digRoutine() == 1 then
         return
@@ -65,20 +65,7 @@ function mainLoop()
     if digRoutine() == 1 then
       return
     end
-    rotate('S')
-
-    print("[Main] Next Row!")
-    while currentLoc.z > 0 do
-      print("[Main] Current Loc: {" .. currentLoc.z .. "," .. currentLoc.x .. "}")
-      if digRoutine() == 1 then
-        return
-      end
-    end
-    rotate('E')
-    if digRoutine() == 1 then
-      return
-    end
-    rotate('N')
+    rotate(rowRotation)
 
   end
   dumpInventory()
