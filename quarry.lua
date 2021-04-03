@@ -52,10 +52,9 @@ function mainLoop()
   --      change which varies how the layer routine will work (E v W & N v S).
   --       Keep in mind you dig 3 tiles at a time, so you need to descend enough
   while currentLoc.x < EDGE_SIZE do
-    print("[Main] Next Row!")
     local rowRotation = currentLoc.x % 2 == 0 and 'S' or 'N'
     for i = 1, EDGE_SIZE do
-      print("[Main] Current Loc: {" .. currentLoc.z .. "," .. currentLoc.x .. "}")
+      print("[Main] "..i.." Loc: {" .. currentLoc.z .. "," .. currentLoc.x .. "}")
       if digRoutine() == 1 then
         return
       end
@@ -77,9 +76,17 @@ function digRoutine()
   end
   if turtle.detect() then
     print("[Dig] Digging Forward")
-    digForward()
+    if digForward() == 0 then
+      print("[Dig] Inventory Full, Need to Empty")
+      copyLocToLoc(leftOffAtLoc, currentLoc)
+      leftOffAtDir = currentDir
+      dumpInventory()
+      resume()
+      -- TODO this works to fix the resume bug, but EDGE size traversing seems to 
+      -- be the more unreliable bit of logic (fixed row sizes)
+      digForward()
+    end
   else
-    print("[Dig] Air, Moving Forward")
     forward()
   end
   return 0
@@ -97,8 +104,6 @@ end
 -- false, otherwise true
 function dumpInventory()
   print("[Dump] Emptying Inventory")
-  copyLocToLoc(leftOffAtLoc, currentLoc)
-  leftOffAtDir = currentDir
   goToLoc(ORIGIN_LOC, ORIGIN_DIR)
   rotate('E')
   local notChest = false
@@ -127,7 +132,6 @@ function dumpInventory()
     rotate('E')
   until notChest
   print("[Dump] Stopped at Loc: {" .. currentLoc.z .. "," .. currentLoc.x .. "}")
-  print("[Dump] Home: {" .. ORIGIN_LOC.z .. "," .. ORIGIN_LOC.x .. "}")
   goToLoc(ORIGIN_LOC, ORIGIN_DIR)
 end
 
@@ -145,8 +149,6 @@ end
 
 -- Sends the turtle to the given loc and direction
 function goToLoc(loc, direction)
-  print("[goToLoc] Given: {" .. loc.z .. "," .. loc.x .. "}")
-  print("[goToLoc] From: {" .. currentLoc.z .. "," .. currentLoc.x .. "}")
   local xDiff = currentLoc.x - loc.x
   local xDir = xDiff > 0 and 'W' or 'E'
   travel(xDiff, xDir)
@@ -252,7 +254,6 @@ function canFitItem(itemName)
     turtle.select(i)
     local slot = turtle.getItemDetail(i)
     if slot == nil or (slot and slot.name == itemName and turtle.getItemSpace(i) ~= 0) then
-      print("[Fit] Can fit Item")
       turtle.select(1)
       return true
     end
@@ -284,11 +285,10 @@ end
 function refuel() 
   local currentLevel = turtle.getFuelLevel()
   local fuelLimit = turtle.getFuelLimit()
-  print("[Refuel] Fuel Level: "..currentLevel.." / "..fuelLimit)
   if currentLevel > 1000 then
-    print("[Refuel] Fuel not needed")
     return
   end
+  print("[Refuel] Fuel Level: "..currentLevel.." / "..fuelLimit)
   repeat 
     local consumedSomething = false
     for i = 1, 16 do
