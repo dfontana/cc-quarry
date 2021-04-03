@@ -45,7 +45,8 @@ local EDGE_SIZE = 3
 
 function mainLoop() 
   -- DEFECTS
-  -- 2. Items get placed where the cursor currently is. So things don't stack.
+  -- 1. Updating is a royal PITA. Would be nice to autoupdate on run...
+  --    a. optionally from a branch name if we can do github...
   -- 4. Never empties inventory until the end
   -- 5. Need the Y routine. keeping in mind the starting loc on each layer will
   --      change which varies how the layer routine will work (E v W & N v S).
@@ -122,6 +123,7 @@ function dumpInventory()
         end
       end
     end
+    turtle.select(1)
     rotate('E')
   until notChest
   print("[Dump] Stopped at Loc: {" .. currentLoc.z .. "," .. currentLoc.x .. "}")
@@ -251,9 +253,11 @@ function canFitItem(itemName)
     local slot = turtle.getItemDetail(i)
     if slot == nil or (slot and slot.name == itemName and turtle.getItemSpace(i) ~= 0) then
       print("[Fit] Can fit Item")
+      turtle.select(1)
       return true
     end
   end
+  turtle.select(1)
   print("[Fit] Cannot fit Item")
   return false
 end
@@ -295,6 +299,7 @@ function refuel()
         break
       end
     end
+    turtle.select(1)
     if consumedSomething == false then
       print("[Refuel] No more fuel to consume")
       break
