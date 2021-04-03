@@ -47,6 +47,8 @@ local tArgs = {...}
 function mainLoop() 
   -- Parse args and unpack to globals
   local args = ccqArg.parseArgs(tArgs)
+  print(tArgs)
+  print(args)
   if args == false then
     return
   end
