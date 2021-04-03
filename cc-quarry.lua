@@ -18,10 +18,10 @@
 --
 -- Note: Be sure to label your turtles (`label set foo`) so you don't lose fuel or programs
 
-os.loadAPI("cc-quarry-arguments")
-os.loadAPI("cc-quarry-helpers")
-os.loadAPI("cc-quarry-primitives")
-os.loadAPI("cc-quarry-utils")
+os.loadAPI("ccqArg")
+os.loadAPI("ccqHelp")
+os.loadAPI("ccqPrim")
+os.loadAPI("ccqUtil")
 
 -- Constants used to reset the turtle
 local ORIGIN_LOC = {x=0,y=0,z=0}
@@ -44,7 +44,7 @@ local leftOffAtDir = 'N'
 
 function mainLoop() 
   -- Parse args and unpack to globals
-  local args = parseArgs()
+  local args = ccqArg.parseArgs()
   if args == false then
     return
   end
@@ -55,7 +55,7 @@ function mainLoop()
   -- 1. Updating is a royal PITA. Would be nice to autoupdate on run...
   --    a. optionally from a branch name if we can do github...
   -- 3. need to break up this file
-  print("[Main] Going to "..locString(END_LOC))
+  print("[Main] Going to "..ccqUtil.locString(END_LOC))
   while currentLoc.y >= END_LOC.y do
     layerRoutine()
     local originShaft = {x=ORIGIN_LOC.x,z=ORIGIN_LOC.z,y=currentLoc.y}
@@ -74,16 +74,16 @@ function layerRoutine()
     local isEvn = currentLoc.x % 2 == 0
     local rowRotation = isEvn and 'S' or 'N'
     while rowCheck(isEvn) do
-      print("[Main] "..locString(currentLoc))
+      print("[Main] "..ccqUtil.locString(currentLoc))
       if digRoutine() == 1 then
         return
       end
     end
-    currentDir = rotate(currentDir, 'E')
+    currentDir = ccqPrim.rotate(currentDir, 'E')
     if digRoutine() == 1 then
       return
     end
-    currentDir = rotate(currentDir, rowRotation)
+    currentDir = ccqPrim.rotate(currentDir, rowRotation)
   end
 end
 
@@ -96,14 +96,14 @@ function rowCheck(isEvn)
 end
 
 function digRoutine() 
-  if hasFuelToMove(costToDest(currentLoc, ORIGIN_LOC)) == false then
+  if ccqPrim.hasFuelToMove(ccqUtil.costToDest(currentLoc, ORIGIN_LOC)) == false then
     print("[Dig] Cannot move without stranding, returning home")
     goToLoc(ORIGIN_LOC, ORIGIN_DIR)
     return 1
   end
-  if digForward(currentLoc) == 0 then
+  if ccqHelp.digForward(currentLoc) == 0 then
     print("[Dig] Inventory Full, Need to Empty")
-    copyLocToLoc(leftOffAtLoc, currentLoc)
+    ccqUtil.copyLocToLoc(leftOffAtLoc, currentLoc)
     leftOffAtDir = currentDir
     dumpInventory()
     resume()
@@ -124,12 +124,12 @@ end
 function dumpInventory()
   print("[Dump] Emptying Inventory")
   goToLoc(ORIGIN_LOC, ORIGIN_DIR)
-  currentDir = rotate(currentDir, 'E')
+  currentDir = ccqPrim.rotate(currentDir, 'E')
   local notChest = false
   repeat
-    print("[Dump] Current "..locString(currentLoc))
-    forward(currentLoc)
-    currentDir = rotate(currentDir, 'S')
+    print("[Dump] Current "..ccqUtil.locString(currentLoc))
+    ccqHelp.forward(currentLoc)
+    currentDir = ccqPrim.rotate(currentDir, 'S')
     -- are we looking at a chest?
     local success, data = turtle.inspect()
     if success == false or data.name ~= 'minecraft:chest' then
@@ -148,9 +148,9 @@ function dumpInventory()
       end
     end
     turtle.select(1)
-    currentDir = rotate(currentDir,'E')
+    currentDir = ccqPrim.rotate(currentDir,'E')
   until notChest
-  print("[Dump] Stopped at "..locString(currentLoc))
+  print("[Dump] Stopped at "..ccqUtil.locString(currentLoc))
   goToLoc(ORIGIN_LOC, ORIGIN_DIR)
 end
 
@@ -158,7 +158,7 @@ end
 -- (2 * Fuel-for-Trip) + 1 (to ensure it can get home).
 -- This will return false if it could not do this as a result.
 function resume()
-  if hasFuelToMove(2 * costToDest(currentLoc, leftOffAtLoc)) == false then
+  if ccqPrim.hasFuelToMove(2 * ccqUtil.costToDest(currentLoc, leftOffAtLoc)) == false then
     print("[Resume] Cannot resume, not enough fuel")
     return false
   end
@@ -170,15 +170,15 @@ end
 function goToLoc(loc, direction)
   local xDiff = currentLoc.x - loc.x
   local xDir = xDiff > 0 and 'W' or 'E'
-  travel(xDiff, xDir)
+  ccqPrim.travel(xDiff, xDir)
   local zDiff = currentLoc.z - loc.z
   local zDir = zDiff > 0 and 'S' or 'N'
-  travel(zDiff, zDir)
+  ccqPrim.travel(zDiff, zDir)
   local yDiff = currentLoc.y - loc.y
   local yDir = yDiff > 0 and 'D' or 'U'
-  travel(yDiff, yDir)
-  currentDir = rotate(currentDir, direction)
-  copyLocToLoc(currentLoc, loc)
+  ccqPrim.travel(yDiff, yDir)
+  currentDir = ccqPrim.rotate(currentDir, direction)
+  ccqUtil.copyLocToLoc(currentLoc, loc)
   currentDir = direction
 end
 

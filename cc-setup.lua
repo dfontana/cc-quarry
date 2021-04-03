@@ -21,10 +21,10 @@ function download(scriptPath, scriptName)
 end
 
 download('cc-quarry', 'ccq')
-download('api/cc-quarry-arguments', 'cc-quarry-arguments')
-download('api/cc-quarry-helpers', 'cc-quarry-helpers')
-download('api/cc-quarry-primitives', 'cc-quarry-primitives')
-download('api/cc-quarry-utils', 'cc-quarry-utils')
+download('api/cc-quarry-arguments', 'ccqArg')
+download('api/cc-quarry-helpers', 'ccqHelp')
+download('api/cc-quarry-primitives', 'ccqPrim')
+download('api/cc-quarry-utils', 'ccqUtil')
 
 print("")
 print("Setup complete! Run 'ccq'")

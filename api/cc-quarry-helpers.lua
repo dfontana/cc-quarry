@@ -11,7 +11,7 @@ function digForward(locRef)
   if turtle.detect() then
     didDig = true
     local success, data = turtle.inspect()
-    if success and canFitItem(data.name) then
+    if success and ccqPrim.canFitItem(data.name) then
       turtle.dig()
       itemsPickedUp = itemsPickedUp + 1
     end
@@ -20,7 +20,7 @@ function digForward(locRef)
   if turtle.detectUp() then
     didDig = true
     local successUp, dataUp = turtle.inspectUp()
-    if successUp and canFitItem(dataUp.name) then
+    if successUp and ccqPrim.canFitItem(dataUp.name) then
       turtle.digUp()
       itemsPickedUp = itemsPickedUp + 1
     end
@@ -28,7 +28,7 @@ function digForward(locRef)
   if turtle.detectDown() then
     didDig = true
     local successDn, dataDn = turtle.inspectDown()
-    if successDn and canFitItem(dataDn.name) then
+    if successDn and ccqPrim.canFitItem(dataDn.name) then
       turtle.digDown()
       itemsPickedUp = itemsPickedUp + 1
     end
