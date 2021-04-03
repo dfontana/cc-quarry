@@ -47,8 +47,30 @@ local leftOffAtDir = 'N'
 
 function mainLoop() 
   -- TODO
-  -- keep in mind calls to digForward or any move functions need to update the current coord
-  -- while high level APIs like resume(), dumpInventory(), or goToLoc() will do this internally
+  -- General idea
+  -- 1. Start are Origin
+  -- 2. While currentLoc.x < max x
+  --   3. While currentLoc < max z, detect forward:
+  --      a digRoutine
+  --   4. rotate E
+  --      a digRoutine
+  --   5. rotate S
+  --   6. While currentLoc.z != 0, detect forward:
+  --      a digRoutine
+  --   7. rotate E
+  --      a digRoutine
+  --   8. rotate N
+  -- 9. return home
+  --
+  --
+  -- digRoutine:
+  --   a if not hasFuelToMove(costToDest(ORIGIN_LOC))
+  --     b go home
+  --     c exit routine
+  --   b if not block: forward
+  --     d return early
+  --   a if block: digForward
+  --     a if no items were picked up, dumpInventory()
 end
 
 -- ===========================================================================
@@ -62,17 +84,41 @@ end
 -- In the event it's inventory isn't empty after this the function will return 
 -- false, otherwise true
 function dumpInventory()
+  leftOffAtLoc = currentLoc
+  leftOffAtDir = currentDir
   goToLoc(ORIGIN, ORIGIN_DIR)
-  -- TODO
-  -- Loop over inventory to drop items, so long as its not fuel
-  for i = 1, 16 do
-    turtle.select(i)
-    if turtle.refuel(0) ~= false then
-      -- TODO move turtle if full
-      local isInvFull = turtle.drop()
+  rotate('E')
+  local invEmpty = false
+  local notChest = false
+  repeat
+    forward()
+    rotate('S')
+    -- are we looking at a chest?
+    local success, data = turtle.inspect()
+    if success == false or data.name ~= 'minecraft:chest' then
+      break
     end
-  end
-
+    -- Dump inventory
+    for i = 1, 16 do
+      turtle.select(i)
+      -- Skip fuel items
+      if turtle.refuel(0) == false then
+        if turtle.drop() then
+          -- inventory is full, go to next
+          break
+        end
+      end
+    end
+    -- Check if inv is cleared of non-fueld items
+    for i = 1, 16 do
+      turtle.select(i)
+      -- Skip fuel items
+      if turtle.refuel(0) == false then
+        invEmpty = turtle.getItemCount() > 0 && invEmpty
+      end
+    end
+    rotate('E')
+  until invEmpty or notChest
   goToLoc(ORIGIN, ORIGIN_DIR)
 end
 
@@ -106,6 +152,22 @@ end
 -- =================    INNER API (don't call from MainLoop ideally)    ======
 -- ===========================================================================
 
+function forward() 
+  if turtle.forward() then
+    if currentDir == 'N' then
+      currentLoc.z = currentLoc.z + 1
+    elseif currentDir == 'S' then
+      currentLoc.z = currentLoc.z - 1
+    elseif currentDir == 'E' then
+      currentLoc.x = currentLoc.x + 1
+    else
+      currentLoc.x = currentLoc.x - 1
+    end
+    return true
+  end
+  return false
+end
+
 -- Digs the 3 blocks in front of the turtle and moves forward, if there is a block in front.
 -- Returns the number of items it was able to pick up or -1 if nothing happened
 -- If the turtle returns 0 enough its suggestive there's nothing left for it to fit
@@ -117,7 +179,7 @@ function digForward()
       turtle.dig()
       itemsPickedUp = itemsPickedUp + 1
     end
-    turtle.forward()
+    forward()
     local successUp, dataUp = turtle.inspectUp()
     if successUp and canFitItem(dataUp.name) then
       turtle.digUp()
