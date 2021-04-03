@@ -62,8 +62,7 @@ function mainLoop()
   END_LOC = args.loc
 
   -- DEFECTS
-  -- 1. Dig forward will skip blocks if there's nothing in front which
-  -- 1. will cause the y routine to skip blocks between levels.
+  -- 1. Turtle digs one too many columns, can we do better?
   -- 1. Updating is a royal PITA. Would be nice to autoupdate on run...
   --    a. optionally from a branch name if we can do github...
   -- 3. need to break up this file
@@ -113,17 +112,12 @@ function digRoutine()
     goToLoc(ORIGIN_LOC, ORIGIN_DIR)
     return 1
   end
-  if turtle.detect() then
-    print("[Dig] Digging Forward")
-    if digForward() == 0 then
-      print("[Dig] Inventory Full, Need to Empty")
-      copyLocToLoc(leftOffAtLoc, currentLoc)
-      leftOffAtDir = currentDir
-      dumpInventory()
-      resume()
-    end
-  else
-    forward()
+  if digForward() == 0 then
+    print("[Dig] Inventory Full, Need to Empty")
+    copyLocToLoc(leftOffAtLoc, currentLoc)
+    leftOffAtDir = currentDir
+    dumpInventory()
+    resume()
   end
   return 0
 end
@@ -245,21 +239,35 @@ end
 -- If the turtle returns 0 enough its suggestive there's nothing left for it to fit
 function digForward() 
   local itemsPickedUp = 0
-  local success, data = turtle.inspect()
-  if success and canFitItem(data.name) then
-    turtle.dig()
-    itemsPickedUp = itemsPickedUp + 1
+  local didDig = false
+  if turtle.detect() then
+    didDig = true
+    local success, data = turtle.inspect()
+    if success and canFitItem(data.name) then
+      turtle.dig()
+      itemsPickedUp = itemsPickedUp + 1
+    end
   end
   forward()
-  local successUp, dataUp = turtle.inspectUp()
-  if successUp and canFitItem(dataUp.name) then
-    turtle.digUp()
-    itemsPickedUp = itemsPickedUp + 1
+  if turtle.detectUp() then
+    didDig = true
+    local successUp, dataUp = turtle.inspectUp()
+    if successUp and canFitItem(dataUp.name) then
+      turtle.digUp()
+      itemsPickedUp = itemsPickedUp + 1
+    end
   end
-  local successDn, dataDn = turtle.inspectDown()
-  if successDn and canFitItem(dataDn.name) then
-    turtle.digDown()
-    itemsPickedUp = itemsPickedUp + 1
+  if turtle.detectDown() then
+    didDig = true
+    local successDn, dataDn = turtle.inspectDown()
+    if successDn and canFitItem(dataDn.name) then
+      turtle.digDown()
+      itemsPickedUp = itemsPickedUp + 1
+    end
+  end
+  if didDig == false then
+    -- Nothing was dug up so we should skip the item check
+    return -1
   end
   print("[DigForward] Picked up items: " .. itemsPickedUp)
   return itemsPickedUp
