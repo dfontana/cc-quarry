@@ -46,20 +46,25 @@ local leftOffAtDir = 'N'
 -- ===========================================================================
 
 function mainLoop() 
-  -- TODO
+  -- TODO routine assumes something about how wide x is (even number). Should 
+  --      adapt it to check column by column rather than do moves in pairs. It
+  --      just means adapting the final rotate (S v N) depending on even or odd
+  -- TODO need the Y routine. keeping in mind the starting loc on each layer will
+  --      change which varies how the layer routine will work (E v W & N v S).
+  --       Keep in mind you dig 3 tiles at a time, so you need to descend enough
   -- General idea
   -- 1. Start are Origin
-  -- 2. While currentLoc.x < max x
-  --   3. While currentLoc < max z, detect forward:
-  --      a digRoutine
-  --   4. rotate E
-  --      a digRoutine
-  --   5. rotate S
-  --   6. While currentLoc.z != 0, detect forward:
-  --      a digRoutine
-  --   7. rotate E
-  --      a digRoutine
-  --   8. rotate N
+  --  2. While currentLoc.x < max x
+  --    3. While currentLoc < max z, detect forward:
+  --       a digRoutine
+  --    4. rotate E
+  --       a digRoutine
+  --    5. rotate S
+  --    6. While currentLoc.z != 0, detect forward:
+  --       a digRoutine
+  --    7. rotate E
+  --       a digRoutine
+  --    8. rotate N
   -- 9. return home
   --
   --
