@@ -19,26 +19,21 @@
 -- Note: Be sure to label your turtles (`label set foo`) so you don't lose fuel or programs
 
 -- Defines a left transform on direction of 1
-local LEFT_DIR = {
-  'N': 'W',
-  'W': 'S',
-  'S': 'E',
-  'E': 'N'
-}
+local LEFT_DIR = {N='W',W='S',S='E',E='N'}
 
 -- Constants used to reset the turtle
-local ORIGIN = {'x': 0, 'y': 0, 'z': 0}
+local ORIGIN_LOC = {x=0,y=0,z=0}
 local ORIGIN_DIR = 'N'
 
 -- Offset coordinates from the turtle's current location. This means
 -- the turtle uses relative location. If the program reboots the turtle
 -- will be lost
-local currentLoc = {'x': 0, 'y': 0, 'z': 0}
+local currentLoc = {x=0,y=0,z=0}
 local currentDir = 'N'
 
 -- Stores where the turtle stopped when it goes to return home. Is used to
 -- help the turtle bee-line back to where it was efficiently
-local leftOffAtLoc = {'x': 0, 'y': 0, 'z': 0}
+local leftOffAtLoc = {x=0,y=0,z=0}
 local leftOffAtDir = 'N'
 
 -- ===========================================================================
@@ -52,30 +47,46 @@ function mainLoop()
   -- TODO need the Y routine. keeping in mind the starting loc on each layer will
   --      change which varies how the layer routine will work (E v W & N v S).
   --       Keep in mind you dig 3 tiles at a time, so you need to descend enough
-  -- General idea
-  -- 1. Start are Origin
-  --  2. While currentLoc.x < max x
-  --    3. While currentLoc < max z, detect forward:
-  --       a digRoutine
-  --    4. rotate E
-  --       a digRoutine
-  --    5. rotate S
-  --    6. While currentLoc.z != 0, detect forward:
-  --       a digRoutine
-  --    7. rotate E
-  --       a digRoutine
-  --    8. rotate N
-  -- 9. return home
-  --
-  --
-  -- digRoutine:
-  --   a if not hasFuelToMove(costToDest(ORIGIN_LOC))
-  --     b go home
-  --     c exit routine
-  --   b if not block: forward
-  --     d return early
-  --   a if block: digForward
-  --     a if no items were picked up, dumpInventory()
+  while currentLoc.x < 10 do
+    while currentLoc.z < 10 do
+      print("[Main] Current Loc: {" .. currentLoc.z .. "," .. currentLoc.x .. "}")
+      if digRoutine() == 1 then
+        return
+      end
+    end
+    rotate('E')
+    if digRoutine() == 1 then
+      return
+    end
+    rotate('S')
+    while currentLoc.z < 10 do
+      print("[Main] Current Loc: {" .. currentLoc.z .. "," .. currentLoc.x .. "}")
+      if digRoutine() == 1 then
+        return
+      end
+    end
+    rotate('E')
+    if digRoutine() == 1 then
+      return
+    end
+    rotate('N')
+  end
+end
+
+function digRoutine() 
+  if hasFuelToMove(costToDest(ORIGIN_LOC)) == false then
+    print("[Dig] Cannot move without standing, returning home")
+    goToLoc(ORIGIN_LOC, ORIGIN_DIR)
+    return 1
+  end
+  if turtle.detect() then
+    print("[Dig] Digging Forward")
+    digForward()
+  else
+    print("[Dig] Air, Moving Forward")
+    forward()
+  end
+  return 0
 end
 
 -- ===========================================================================
@@ -89,9 +100,10 @@ end
 -- In the event it's inventory isn't empty after this the function will return 
 -- false, otherwise true
 function dumpInventory()
+  print("[Dump] Emptying Inventory")
   leftOffAtLoc = currentLoc
   leftOffAtDir = currentDir
-  goToLoc(ORIGIN, ORIGIN_DIR)
+  goToLoc(ORIGIN_LOC, ORIGIN_DIR)
   rotate('E')
   local invEmpty = false
   local notChest = false
@@ -119,12 +131,12 @@ function dumpInventory()
       turtle.select(i)
       -- Skip fuel items
       if turtle.refuel(0) == false then
-        invEmpty = turtle.getItemCount() > 0 && invEmpty
+        invEmpty = turtle.getItemCount() > 0 and invEmpty
       end
     end
     rotate('E')
   until invEmpty or notChest
-  goToLoc(ORIGIN, ORIGIN_DIR)
+  goToLoc(ORIGIN_LOC, ORIGIN_DIR)
 end
 
 -- Returns the turtle to where it left off, but only if it has at least 
@@ -132,8 +144,10 @@ end
 -- This will return false if it could not do this as a result.
 function resume()
   if hasFuelToMove(2 * costToDest(leftOffAtLoc)) == false then
+    print("[Resume] Cannot resume, not enough fuel")
     return false
   end
+  print("[Resume] Returning to left off loc")
   goToLoc(leftOffAtLoc, leftOffAtDir)
 end
 
@@ -173,31 +187,30 @@ function forward()
   return false
 end
 
--- Digs the 3 blocks in front of the turtle and moves forward, if there is a block in front.
--- Returns the number of items it was able to pick up or -1 if nothing happened
+-- Digs the 3 blocks in front of the turtle and moves forward
+-- Returns the number of items it was able to pick up
 -- If the turtle returns 0 enough its suggestive there's nothing left for it to fit
 function digForward() 
-  if turtle.detect() then
-    local itemsPickedUp = 0
-    local success, data = turtle.inspect()
-    if success and canFitItem(data.name) then
-      turtle.dig()
-      itemsPickedUp = itemsPickedUp + 1
-    end
-    forward()
-    local successUp, dataUp = turtle.inspectUp()
-    if successUp and canFitItem(dataUp.name) then
-      turtle.digUp()
-      itemsPickedUp = itemsPickedUp + 1
-    end
-    local successDn, dataDn = turtle.inspectDown()
-    if successDn and canFitItem(dataDn.name) then
-      turtle.digUp()
-      itemsPickedUp = itemsPickedUp + 1
-    end
-    return itemsPickedUp
+  -- TODO you need to selet a slot when picking up an item
+  local itemsPickedUp = 0
+  local success, data = turtle.inspect()
+  if success and canFitItem(data.name) then
+    turtle.dig()
+    itemsPickedUp = itemsPickedUp + 1
   end
-  return -1
+  forward()
+  local successUp, dataUp = turtle.inspectUp()
+  if successUp and canFitItem(dataUp.name) then
+    turtle.digUp()
+    itemsPickedUp = itemsPickedUp + 1
+  end
+  local successDn, dataDn = turtle.inspectDown()
+  if successDn and canFitItem(dataDn.name) then
+    turtle.digUp()
+    itemsPickedUp = itemsPickedUp + 1
+  end
+  print("[DigForward] Picked up items: " .. itemsPickedUp)
+  return itemsPickedUp
 end
 
 -- Travel the given number of units in the given direction
@@ -211,7 +224,7 @@ function travel(units, direction)
       -- Rotate when on cartesian plane
       rotate(direction)
     end
-    for i = 1, math.abs(units) then
+    for i = 1, math.abs(units) do
       if direction == 'U' then
         turtle.up()
       elseif direction == 'D' then
@@ -225,9 +238,11 @@ end
 
 -- Rotate the turtle until it faces the given Dir
 function rotate(direction)
-  while currentDir ~= direction then
+  print("[Rotate] To ".. direction.." from "..currentDir)
+  while currentDir ~= direction do
     turtle.turnLeft()
     currentDir = LEFT_DIR[direction]
+    print("[Rotate] To ".. direction.." from "..currentDir)
   end 
 end
 
@@ -243,10 +258,12 @@ function canFitItem(itemName)
   for i = 1, 16 do
     turtle.select(i)
     local slot = turtle.getItemDetail(i)
-    if slot and slot.name == itemName and turtle.getItemSpace(i) ~= 0 then
+    if slot == nil or (slot and slot.name == itemName and turtle.getItemSpace(i) ~= 0) then
+      print("[Fit] Can fit Item")
       return true
     end
   end
+  print("[Fit] Cannot fit Item")
   return false
 end
 
@@ -272,17 +289,28 @@ end
 function refuel() 
   local currentLevel = turtle.getFuelLevel()
   local fuelLimit = turtle.getFuelLimit()
+  print("[Refuel] Fuel Level: " .. currentLevel)
   if fuelLimit * 0.75 < currentLevel then
+    print("[Refuel] Fuel not needed")
     return
   end
   repeat 
+    local consumedSomething = false
     for i = 1, 16 do
       turtle.select(i)
       if turtle.refuel(0) then
         turtle.refuel(1)
+        consumedSomething = true
         break
       end
     end
+    if consumedSomething == false then
+      print("[Refuel] No more fuel to consume, exiting")
+      break
+    end
     newLevel = turtle.getFuelLevel()
-  until fuelLimit == newLevel or newLevel == currentLevel
+    print("[Refuel] Fuel Level: " .. newLevel)
+  until fuelLimit == newLevel or newLevel > fuelLimit * 0.75
 end
+
+mainLoop()
