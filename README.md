@@ -16,8 +16,8 @@ The `cc-setup` script will then let you either fetch the latest revision, or if 
 cc-setup [<branchName> = main]
 ```
 
-By running this, you'll download the dependencies of `cc-quarry` as well as install the script `cc-quarry`. This script is your entry point.
+By running this, you'll download the dependencies of `cc-quarry` as well as install the script `ccq`. This script is your entry point.
 
 ## Running
 
-Use the `cc-quarry` command. This will print it's usage if you don't know off the top of your head.
+Use the `ccq` command. This will print it's usage if you don't know off the top of your head.
