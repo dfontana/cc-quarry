@@ -58,7 +58,7 @@ end
 local LEFT_DIR = {N='W',W='S',S='E',E='N'}
 function rotate(facing, direction)
   if facing == direction then
-    return targetDir
+    return direction
   end
   turtle.turnLeft()
   return rotate(LEFT_DIR[facing], direction)
