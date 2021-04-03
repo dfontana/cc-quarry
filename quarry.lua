@@ -36,21 +36,35 @@ local currentDir = 'N'
 local leftOffAtLoc = {x=0,y=0,z=0}
 local leftOffAtDir = 'N'
 
--- TODO remove this hardcoding for configurable size
-local END_LOC = {x=3,y=0,z=3}
+local tArgs = {...}
+function parseArgs()
+  local endLoc = {x=tonumber(tArgs[1]),y=0,z=tonumber(tArgs[2])}
+  if tArgs[3] ~= nil then
+    endLoc.y = tonumber(tArgs[3])
+  end
+  return {loc=endLoc}
+end
 
 -- ===========================================================================
 -- =================        MAIN LOOP        =================================
 -- ===========================================================================
 
 function mainLoop() 
+  -- Parse args and unpack to globals
+  if #tArgs < 2 or #tArgs > 3 then
+    print("Usage: cc <width> <length> [<depth> = 0]")
+    return
+  end
+  local args = parseArgs()
+  END_LOC = args.loc
+
   -- DEFECTS
-  -- 1. Updating is a royal PITA. Would be nice to autoupdate on run...
-  --    a. optionally from a branch name if we can do github...
-  -- 4. Never empties inventory until the end
   -- 5. Need the Y routine. keeping in mind the starting loc on each layer will
   --      change which varies how the layer routine will work (E v W & N v S).
   --       Keep in mind you dig 3 tiles at a time, so you need to descend enough
+  -- 1. Updating is a royal PITA. Would be nice to autoupdate on run...
+  --    a. optionally from a branch name if we can do github...
+  -- 3. need to break up this file
   while currentLoc.x < END_LOC.x do
     local isEvn = currentLoc.x % 2 == 0
     local rowRotation = isEvn and 'S' or 'N'
