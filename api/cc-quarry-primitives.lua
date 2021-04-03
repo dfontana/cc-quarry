@@ -36,26 +36,6 @@ function refuel()
   until newLevel > fuelLimit * 0.75
 end
 
--- Travel the given number of units in the given direction
--- units maybe positive or negative, it doesn't matter
-function travel(units, direction)
-  if units ~= 0 then
-    if direction ~= 'U' and direction ~= 'D' then
-      -- Rotate when on cartesian plane
-      currentDir = rotate(currentDir, direction)
-    end
-    for i = 1, math.abs(units) do
-      if direction == 'U' then
-        turtle.up()
-      elseif direction == 'D' then
-        turtle.down()
-      else
-        turtle.forward()
-      end
-    end
-  end
-end
-
 -- Checks inventory fullness against the given item for space
 -- Returning true if the item could be fit
 function canFitItem(itemName) 
@@ -77,11 +57,11 @@ end
 -- Will return the final direction its facing for ease of setting vars.
 local LEFT_DIR = {N='W',W='S',S='E',E='N'}
 function rotate(facing, direction)
-  if targetDir == direction then
+  if facing == direction then
     return targetDir
   end
   turtle.turnLeft()
-  return rotate(LEFT_DIR[targetDir], direction)
+  return rotate(LEFT_DIR[facing], direction)
 end
 
 

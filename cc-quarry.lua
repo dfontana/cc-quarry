@@ -47,8 +47,6 @@ local tArgs = {...}
 function mainLoop() 
   -- Parse args and unpack to globals
   local args = ccqArg.parseArgs(tArgs)
-  print(tArgs)
-  print(args)
   if args == false then
     return
   end
@@ -105,7 +103,7 @@ function digRoutine()
     goToLoc(ORIGIN_LOC, ORIGIN_DIR)
     return 1
   end
-  if ccqHelp.digForward(currentLoc) == 0 then
+  if ccqHelp.digForward(currentLoc, currentDir) == 0 then
     print("[Dig] Inventory Full, Need to Empty")
     ccqUtil.copyLocToLoc(leftOffAtLoc, currentLoc)
     leftOffAtDir = currentDir
@@ -132,7 +130,7 @@ function dumpInventory()
   local notChest = false
   repeat
     print("[Dump] Current "..ccqUtil.locString(currentLoc))
-    ccqHelp.forward(currentLoc)
+    ccqHelp.forward(currentLoc, currentDir)
     currentDir = ccqPrim.rotate(currentDir, 'S')
     -- are we looking at a chest?
     local success, data = turtle.inspect()
@@ -174,16 +172,36 @@ end
 function goToLoc(loc, direction)
   local xDiff = currentLoc.x - loc.x
   local xDir = xDiff > 0 and 'W' or 'E'
-  ccqPrim.travel(xDiff, xDir)
+  travel(xDiff, xDir)
   local zDiff = currentLoc.z - loc.z
   local zDir = zDiff > 0 and 'S' or 'N'
-  ccqPrim.travel(zDiff, zDir)
+  travel(zDiff, zDir)
   local yDiff = currentLoc.y - loc.y
   local yDir = yDiff > 0 and 'D' or 'U'
-  ccqPrim.travel(yDiff, yDir)
+  travel(yDiff, yDir)
   currentDir = ccqPrim.rotate(currentDir, direction)
   ccqUtil.copyLocToLoc(currentLoc, loc)
   currentDir = direction
+end
+
+-- Travel the given number of units in the given direction
+-- units maybe positive or negative, it doesn't matter
+function travel(units, direction)
+  if units ~= 0 then
+    if direction ~= 'U' and direction ~= 'D' then
+      -- Rotate when on cartesian plane
+      currentDir = rotate(currentDir, direction)
+    end
+    for i = 1, math.abs(units) do
+      if direction == 'U' then
+        turtle.up()
+      elseif direction == 'D' then
+        turtle.down()
+      else
+        turtle.forward()
+      end
+    end
+  end
 end
 
 mainLoop()

@@ -5,7 +5,7 @@
 -- Digs the 3 blocks in front of the turtle and moves forward
 -- Returns the number of items it was able to pick up
 -- If the turtle returns 0 enough its suggestive there's nothing left for it to fit
-function digForward(locRef) 
+function digForward(locRef, dir) 
   local itemsPickedUp = 0
   local didDig = false
   if turtle.detect() then
@@ -16,7 +16,7 @@ function digForward(locRef)
       itemsPickedUp = itemsPickedUp + 1
     end
   end
-  forward(locRef)
+  forward(locRef, dir)
   if turtle.detectUp() then
     didDig = true
     local successUp, dataUp = turtle.inspectUp()
@@ -59,13 +59,13 @@ function digDown(times, locRef)
 end
 
 -- Move the Bot Forward, updating the locRef with the result
-function forward(locRef) 
+function forward(locRef, dir) 
   if turtle.forward() then
-    if currentDir == 'N' then
+    if dir == 'N' then
       locRef.z = locRef.z + 1
-    elseif currentDir == 'S' then
+    elseif dir == 'S' then
       locRef.z = locRef.z - 1
-    elseif currentDir == 'E' then
+    elseif dir == 'E' then
       locRef.x = locRef.x + 1
     else
       locRef.x = locRef.x - 1
