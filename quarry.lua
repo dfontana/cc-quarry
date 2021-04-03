@@ -45,14 +45,12 @@ local EDGE_SIZE = 3
 
 function mainLoop() 
   -- DEFECTS
-  -- 1. Refueling occurs too often, it slows us down
   -- 2. Items get placed where the cursor currently is. So things don't stack.
   -- 4. Never empties inventory until the end
   -- 5. Need the Y routine. keeping in mind the starting loc on each layer will
   --      change which varies how the layer routine will work (E v W & N v S).
   --       Keep in mind you dig 3 tiles at a time, so you need to descend enough
   while currentLoc.x < EDGE_SIZE do
-
     print("[Main] Next Row!")
     local rowRotation = currentLoc.x % 2 == 0 and 'S' or 'N'
     for i = 1, EDGE_SIZE do
@@ -66,7 +64,6 @@ function mainLoop()
       return
     end
     rotate(rowRotation)
-
   end
   dumpInventory()
 end
@@ -283,8 +280,8 @@ end
 function refuel() 
   local currentLevel = turtle.getFuelLevel()
   local fuelLimit = turtle.getFuelLimit()
-  print("[Refuel] Fuel Level: " .. currentLevel)
-  if fuelLimit * 0.75 < currentLevel then
+  print("[Refuel] Fuel Level: "..currentLevel.." / "..fuelLimit)
+  if currentLevel > 1000 then
     print("[Refuel] Fuel not needed")
     return
   end
@@ -304,7 +301,7 @@ function refuel()
     end
     newLevel = turtle.getFuelLevel()
     print("[Refuel] Fuel Level: " .. newLevel)
-  until fuelLimit == newLevel or newLevel > fuelLimit * 0.75
+  until newLevel > fuelLimit * 0.75
 end
 
 function copyLocToLoc(a, b)
