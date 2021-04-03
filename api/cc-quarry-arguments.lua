@@ -1,5 +1,4 @@
-local tArgs = {...}
-function parseArgs()
+function parseArgs(tArgs)
   if #tArgs < 2 or #tArgs > 3 then
     print("Usage: cc <width> <length> [<depth> = 0]")
     return false

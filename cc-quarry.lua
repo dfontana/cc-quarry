@@ -38,13 +38,15 @@ local currentDir = 'N'
 local leftOffAtLoc = {x=0,y=0,z=0}
 local leftOffAtDir = 'N'
 
+local tArgs = {...}
+
 -- ===========================================================================
 -- =================        MAIN LOOP        =================================
 -- ===========================================================================
 
 function mainLoop() 
   -- Parse args and unpack to globals
-  local args = ccqArg.parseArgs()
+  local args = ccqArg.parseArgs(tArgs)
   if args == false then
     return
   end
