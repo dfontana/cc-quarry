@@ -38,9 +38,13 @@ local leftOffAtDir = 'N'
 
 local tArgs = {...}
 function parseArgs()
+  if #tArgs < 2 or #tArgs > 3 then
+    print("Usage: cc <width> <length> [<depth> = 0]")
+    return false
+  end
   local endLoc = {x=tonumber(tArgs[1]),y=0,z=tonumber(tArgs[2])}
   if tArgs[3] ~= nil then
-    endLoc.y = tonumber(tArgs[3])
+    endLoc.y = 0 - tonumber(tArgs[3])
   end
   return {loc=endLoc}
 end
@@ -51,25 +55,38 @@ end
 
 function mainLoop() 
   -- Parse args and unpack to globals
-  if #tArgs < 2 or #tArgs > 3 then
-    print("Usage: cc <width> <length> [<depth> = 0]")
+  local args = parseArgs()
+  if args == false then
     return
   end
-  local args = parseArgs()
   END_LOC = args.loc
 
   -- DEFECTS
-  -- 5. Need the Y routine. keeping in mind the starting loc on each layer will
-  --      change which varies how the layer routine will work (E v W & N v S).
-  --       Keep in mind you dig 3 tiles at a time, so you need to descend enough
+  -- 1. Dig forward will skip blocks if there's nothing in front which
+  -- 1. will cause the y routine to skip blocks between levels.
   -- 1. Updating is a royal PITA. Would be nice to autoupdate on run...
   --    a. optionally from a branch name if we can do github...
   -- 3. need to break up this file
+  print("[Main] Going to Loc"..locString(END_LOC))
+  while currentLoc.y >= END_LOC.y do
+    layerRoutine()
+    local originShaft = {x=ORIGIN_LOC.x,z=ORIGIN_LOC.z,y=currentLoc.y}
+    goToLoc(originShaft, ORIGIN_DIR)
+    if digDown(3) == false then
+      goToLoc(ORIGIN_LOC, ORIGIN_DIR)
+      print("Something blocked moving down!")
+      return
+    end
+  end
+  dumpInventory()
+end
+
+function layerRoutine()
   while currentLoc.x < END_LOC.x do
     local isEvn = currentLoc.x % 2 == 0
     local rowRotation = isEvn and 'S' or 'N'
     while rowCheck(isEvn) do
-      print("[Main] Loc{" .. currentLoc.z .. "," .. currentLoc.x .. "}")
+      print("[Main] Loc"..locString(currentLoc))
       if digRoutine() == 1 then
         return
       end
@@ -80,7 +97,6 @@ function mainLoop()
     end
     rotate(rowRotation)
   end
-  dumpInventory()
 end
 
 function rowCheck(isEvn) 
@@ -116,6 +132,10 @@ end
 -- =================    HIGH LEVEL APIS    ===================================
 -- ===========================================================================
 
+function locString(loc) 
+  return "{"..loc.x..","..loc.z..","..loc.y.."}"
+end
+
 -- Will return the turtle home, followed by moving to each chest dumping its 
 -- inventory until its empty or theres no more chest room, which ever comes first.
 -- It will then return home again.
@@ -128,7 +148,7 @@ function dumpInventory()
   rotate('E')
   local notChest = false
   repeat
-    print("[Dump] Current Loc: {" .. currentLoc.z .. "," .. currentLoc.x .. "}")
+    print("[Dump] Current Loc"..locString(currentLoc))
     forward()
     rotate('S')
     -- are we looking at a chest?
@@ -151,7 +171,7 @@ function dumpInventory()
     turtle.select(1)
     rotate('E')
   until notChest
-  print("[Dump] Stopped at Loc: {" .. currentLoc.z .. "," .. currentLoc.x .. "}")
+  print("[Dump] Stopped at Loc"..locString(currentLoc))
   goToLoc(ORIGIN_LOC, ORIGIN_DIR)
 end
 
@@ -203,6 +223,23 @@ function forward()
   return false
 end
 
+-- Move the turtle down {times}. If there are blocks in the way it will
+-- dig itself out. If it can't dig or move through, then return false
+function digDown(times)
+  for i=1,times do
+    if turtle.detectDown() then
+      if turtle.digDown() == false then
+        return false
+      end
+    end
+    if turtle.down() == false then
+      return false
+    end
+    currentLoc.y = currentLoc.y - 1
+  end
+  return true
+end
+
 -- Digs the 3 blocks in front of the turtle and moves forward
 -- Returns the number of items it was able to pick up
 -- If the turtle returns 0 enough its suggestive there's nothing left for it to fit
@@ -232,10 +269,7 @@ end
 -- units maybe positive or negative, it doesn't matter
 function travel(units, direction)
   if units ~= 0 then
-    if direction == 'U' or direction == 'D' then
-      -- Ensure travel is correct given sign
-      direction = units > 0 and 'U' or 'D'
-    else
+    if direction ~= 'U' and direction ~= 'D' then
       -- Rotate when on cartesian plane
       rotate(direction)
     end
