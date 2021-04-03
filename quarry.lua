@@ -41,14 +41,19 @@ local leftOffAtDir = 'N'
 -- ===========================================================================
 
 function mainLoop() 
-  -- TODO routine assumes something about how wide x is (even number). Should 
-  --      adapt it to check column by column rather than do moves in pairs. It
-  --      just means adapting the final rotate (S v N) depending on even or odd
-  -- TODO need the Y routine. keeping in mind the starting loc on each layer will
+  -- DEFECTS
+  -- 1. Refueling occurs too often, it slows us down
+  -- 2. Items get placed where the cursor currently is. So things don't stack.
+  -- 3. Below routine assumes even row counts.
+  -- 4. Need the Y routine. keeping in mind the starting loc on each layer will
   --      change which varies how the layer routine will work (E v W & N v S).
   --       Keep in mind you dig 3 tiles at a time, so you need to descend enough
-  while currentLoc.x < 10 do
-    while currentLoc.z < 10 do
+  -- 5. Never empties inventory.
+  -- 6. Doesn't dig down :big-think:
+  while currentLoc.x < 5 do
+
+    print("[Main] Next Row!")
+    while currentLoc.z < 5 do
       print("[Main] Current Loc: {" .. currentLoc.z .. "," .. currentLoc.x .. "}")
       if digRoutine() == 1 then
         return
@@ -59,7 +64,9 @@ function mainLoop()
       return
     end
     rotate('S')
-    while currentLoc.z < 10 do
+
+    print("[Main] Next Row!")
+    while currentLoc.z > 0 do
       print("[Main] Current Loc: {" .. currentLoc.z .. "," .. currentLoc.x .. "}")
       if digRoutine() == 1 then
         return
@@ -70,12 +77,14 @@ function mainLoop()
       return
     end
     rotate('N')
+
   end
+  dumpInventory()
 end
 
 function digRoutine() 
   if hasFuelToMove(costToDest(ORIGIN_LOC)) == false then
-    print("[Dig] Cannot move without standing, returning home")
+    print("[Dig] Cannot move without stranding, returning home")
     goToLoc(ORIGIN_LOC, ORIGIN_DIR)
     return 1
   end
@@ -206,7 +215,7 @@ function digForward()
   end
   local successDn, dataDn = turtle.inspectDown()
   if successDn and canFitItem(dataDn.name) then
-    turtle.digUp()
+    turtle.digDown()
     itemsPickedUp = itemsPickedUp + 1
   end
   print("[DigForward] Picked up items: " .. itemsPickedUp)
@@ -238,12 +247,13 @@ end
 
 -- Rotate the turtle until it faces the given Dir
 function rotate(direction)
+  if currentDir == direction then
+    return
+  end
+  turtle.turnLeft()
+  currentDir = LEFT_DIR[currentDir]
   print("[Rotate] To ".. direction.." from "..currentDir)
-  while currentDir ~= direction do
-    turtle.turnLeft()
-    currentDir = LEFT_DIR[direction]
-    print("[Rotate] To ".. direction.." from "..currentDir)
-  end 
+  rotate(direction)
 end
 
 -- Computes the cost to travel from current location to the given loc tuple
