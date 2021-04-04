@@ -9,14 +9,18 @@ function download(uri, scriptName)
   write("done!")
 end
 
+function stripLuaSuffix(s)
+  return s:gsub("%.lua", "")
+end
+
+
 download("https://raw.githubusercontent.com/rxi/json.lua/master/json.lua", "json")
-os.loadAPI("json")
+local json = require("json")
 
 local gist_string = http.get("https://api.github.com/gists/"..GIST_ID, {["Accept"]="application/vnd.github.v3+json"}).readAll()
 local gist = json.decode(gist_string)
 for filename, data in pairs(gist.files) do
-  print(filename, data.content)
-  download(data.raw_url, filename)
+  download(data.raw_url, stripLuaSuffix(filename))
 end
 
 print("")
