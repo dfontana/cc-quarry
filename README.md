@@ -21,3 +21,7 @@ By running this, you'll download the dependencies of `cc-quarry` as well as inst
 ## Running
 
 Use the `ccq` command. This will print it's usage if you don't know off the top of your head.
+
+## Dependencies
+
+This library utilizes [rxi/json.lua](https://github.com/rxi/json.lua) for updating (`cc-setup`)
