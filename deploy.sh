@@ -3,7 +3,9 @@
 set -e
 
 API_TOKEN=$(<.gh-secret)
-GH_GIST='d72ae5868a87adeb6345dbe6f041138d'
+GH_GIST=${1:-'d72ae5868a87adeb6345dbe6f041138d'}
+
+echo "Deploying to $GH_GIST"
 
 script="
 import json, sys

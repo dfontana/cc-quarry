@@ -1,4 +1,13 @@
+local tArgs = {...}
+if #tArgs > 1 then
+  print("Usage: ccs [<gistId>]")
+  return
+end
+
 local GIST_ID = "d72ae5868a87adeb6345dbe6f041138d"
+if #tArgs == 1 then
+  GIST_ID = tostring(tArgs[1])
+end
 
 function download(uri, scriptName) 
   print("Downloading "..scriptName)
