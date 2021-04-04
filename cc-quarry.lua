@@ -190,10 +190,19 @@ function travel(units, direction)
     end
     for i = 1, math.abs(units) do
       if direction == 'U' then
+        if turtle.detectUp() then
+          turtle.digUp()
+        end
         turtle.up()
       elseif direction == 'D' then
+        if turtle.detectDown() then
+          turtle.digDown()
+        end
         turtle.down()
       else
+        if turtle.detect() then
+          turtle.dig()
+        end
         turtle.forward()
       end
     end
@@ -204,39 +213,32 @@ end
 -- Returns the number of items it was able to pick up
 -- If the turtle returns 0 enough its suggestive there's nothing left for it to fit
 function digForward() 
-  local itemsPickedUp = 0
-  local didDig = false
-  if turtle.detect() then
-    didDig = true
-    local success, data = turtle.inspect()
-    if success and ccqPrim.canFitItem(data.name) then
-      turtle.dig()
-      itemsPickedUp = itemsPickedUp + 1
-    end
-  end
-  forward()
   if turtle.detectUp() then
-    didDig = true
     local successUp, dataUp = turtle.inspectUp()
     if successUp and ccqPrim.canFitItem(dataUp.name) then
       turtle.digUp()
-      itemsPickedUp = itemsPickedUp + 1
+    else
+      return 0
     end
   end
   if turtle.detectDown() then
-    didDig = true
     local successDn, dataDn = turtle.inspectDown()
     if successDn and ccqPrim.canFitItem(dataDn.name) then
       turtle.digDown()
-      itemsPickedUp = itemsPickedUp + 1
+    else
+      return 0
     end
   end
-  if didDig == false then
-    -- Nothing was dug up so we should skip the item check
-    return -1
+  if turtle.detect() then
+    local success, data = turtle.inspect()
+    if success and ccqPrim.canFitItem(data.name) then
+      turtle.dig()
+    else 
+      return 0
+    end
   end
-  print("[DigForward] Picked up items: " .. itemsPickedUp)
-  return itemsPickedUp
+  forward()
+  return -1
 end
 
 -- Move the turtle down {times}. If there are blocks in the way it will
