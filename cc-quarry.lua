@@ -19,7 +19,6 @@
 -- Note: Be sure to label your turtles (`label set foo`) so you don't lose fuel or programs
 
 os.loadAPI("ccqArg")
-os.loadAPI("ccqHelp")
 os.loadAPI("ccqPrim")
 os.loadAPI("ccqUtil")
 
