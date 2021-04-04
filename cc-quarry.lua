@@ -18,8 +18,9 @@
 --
 -- Note: Be sure to label your turtles (`label set foo`) so you don't lose fuel or programs
 
--- Defines a left transform on direction of 1
-local LEFT_DIR = {N='W',W='S',S='E',E='N'}
+os.loadAPI("ccqArg")
+os.loadAPI("ccqPrim")
+os.loadAPI("ccqUtil")
 
 -- Constants used to reset the turtle
 local ORIGIN_LOC = {x=0,y=0,z=0}
@@ -37,17 +38,6 @@ local leftOffAtLoc = {x=0,y=0,z=0}
 local leftOffAtDir = 'N'
 
 local tArgs = {...}
-function parseArgs()
-  if #tArgs < 2 or #tArgs > 3 then
-    print("Usage: cc <width> <length> [<depth> = 0]")
-    return false
-  end
-  local endLoc = {x=tonumber(tArgs[1]),y=0,z=tonumber(tArgs[2])}
-  if tArgs[3] ~= nil then
-    endLoc.y = 0 - tonumber(tArgs[3])
-  end
-  return {loc=endLoc}
-end
 
 -- ===========================================================================
 -- =================        MAIN LOOP        =================================
@@ -55,7 +45,7 @@ end
 
 function mainLoop() 
   -- Parse args and unpack to globals
-  local args = parseArgs()
+  local args = ccqArg.parseArgs(tArgs)
   if args == false then
     return
   end
@@ -63,10 +53,7 @@ function mainLoop()
 
   -- DEFECTS
   -- 1. Turtle digs one too many columns, can we do better?
-  -- 1. Updating is a royal PITA. Would be nice to autoupdate on run...
-  --    a. optionally from a branch name if we can do github...
-  -- 3. need to break up this file
-  print("[Main] Going to Loc"..locString(END_LOC))
+  print("[Main] Going to "..ccqUtil.locString(END_LOC))
   while currentLoc.y >= END_LOC.y do
     layerRoutine()
     local originShaft = {x=ORIGIN_LOC.x,z=ORIGIN_LOC.z,y=currentLoc.y}
@@ -85,16 +72,16 @@ function layerRoutine()
     local isEvn = currentLoc.x % 2 == 0
     local rowRotation = isEvn and 'S' or 'N'
     while rowCheck(isEvn) do
-      print("[Main] Loc"..locString(currentLoc))
+      print("[Main] "..ccqUtil.locString(currentLoc))
       if digRoutine() == 1 then
         return
       end
     end
-    rotate('E')
+    currentDir = ccqPrim.rotate(currentDir, 'E')
     if digRoutine() == 1 then
       return
     end
-    rotate(rowRotation)
+    currentDir = ccqPrim.rotate(currentDir, rowRotation)
   end
 end
 
@@ -107,14 +94,14 @@ function rowCheck(isEvn)
 end
 
 function digRoutine() 
-  if hasFuelToMove(costToDest(ORIGIN_LOC)) == false then
+  if ccqPrim.hasFuelToMove(ccqUtil.costToDest(currentLoc, ORIGIN_LOC)) == false then
     print("[Dig] Cannot move without stranding, returning home")
     goToLoc(ORIGIN_LOC, ORIGIN_DIR)
     return 1
   end
   if digForward() == 0 then
     print("[Dig] Inventory Full, Need to Empty")
-    copyLocToLoc(leftOffAtLoc, currentLoc)
+    ccqUtil.copyLocToLoc(leftOffAtLoc, currentLoc)
     leftOffAtDir = currentDir
     dumpInventory()
     resume()
@@ -126,10 +113,6 @@ end
 -- =================    HIGH LEVEL APIS    ===================================
 -- ===========================================================================
 
-function locString(loc) 
-  return "{"..loc.x..","..loc.z..","..loc.y.."}"
-end
-
 -- Will return the turtle home, followed by moving to each chest dumping its 
 -- inventory until its empty or theres no more chest room, which ever comes first.
 -- It will then return home again.
@@ -139,12 +122,12 @@ end
 function dumpInventory()
   print("[Dump] Emptying Inventory")
   goToLoc(ORIGIN_LOC, ORIGIN_DIR)
-  rotate('E')
+  currentDir = ccqPrim.rotate(currentDir, 'E')
   local notChest = false
   repeat
-    print("[Dump] Current Loc"..locString(currentLoc))
+    print("[Dump] Current "..ccqUtil.locString(currentLoc))
     forward()
-    rotate('S')
+    currentDir = ccqPrim.rotate(currentDir, 'S')
     -- are we looking at a chest?
     local success, data = turtle.inspect()
     if success == false or data.name ~= 'minecraft:chest' then
@@ -163,9 +146,9 @@ function dumpInventory()
       end
     end
     turtle.select(1)
-    rotate('E')
+    currentDir = ccqPrim.rotate(currentDir,'E')
   until notChest
-  print("[Dump] Stopped at Loc"..locString(currentLoc))
+  print("[Dump] Stopped at "..ccqUtil.locString(currentLoc))
   goToLoc(ORIGIN_LOC, ORIGIN_DIR)
 end
 
@@ -173,7 +156,7 @@ end
 -- (2 * Fuel-for-Trip) + 1 (to ensure it can get home).
 -- This will return false if it could not do this as a result.
 function resume()
-  if hasFuelToMove(2 * costToDest(leftOffAtLoc)) == false then
+  if ccqPrim.hasFuelToMove(2 * ccqUtil.costToDest(currentLoc, leftOffAtLoc)) == false then
     print("[Resume] Cannot resume, not enough fuel")
     return false
   end
@@ -192,29 +175,68 @@ function goToLoc(loc, direction)
   local yDiff = currentLoc.y - loc.y
   local yDir = yDiff > 0 and 'D' or 'U'
   travel(yDiff, yDir)
-  rotate(direction)
-  copyLocToLoc(currentLoc, loc)
+  currentDir = ccqPrim.rotate(currentDir, direction)
+  ccqUtil.copyLocToLoc(currentLoc, loc)
   currentDir = direction
 end
 
--- ===========================================================================
--- =================    INNER API (don't call from MainLoop ideally)    ======
--- ===========================================================================
-
-function forward() 
-  if turtle.forward() then
-    if currentDir == 'N' then
-      currentLoc.z = currentLoc.z + 1
-    elseif currentDir == 'S' then
-      currentLoc.z = currentLoc.z - 1
-    elseif currentDir == 'E' then
-      currentLoc.x = currentLoc.x + 1
-    else
-      currentLoc.x = currentLoc.x - 1
+-- Travel the given number of units in the given direction
+-- units maybe positive or negative, it doesn't matter
+function travel(units, direction)
+  if units ~= 0 then
+    if direction ~= 'U' and direction ~= 'D' then
+      -- Rotate when on cartesian plane
+      currentDir = ccqPrim.rotate(currentDir, direction)
     end
-    return true
+    for i = 1, math.abs(units) do
+      if direction == 'U' then
+        turtle.up()
+      elseif direction == 'D' then
+        turtle.down()
+      else
+        turtle.forward()
+      end
+    end
   end
-  return false
+end
+
+-- Digs the 3 blocks in front of the turtle and moves forward
+-- Returns the number of items it was able to pick up
+-- If the turtle returns 0 enough its suggestive there's nothing left for it to fit
+function digForward() 
+  local itemsPickedUp = 0
+  local didDig = false
+  if turtle.detect() then
+    didDig = true
+    local success, data = turtle.inspect()
+    if success and ccqPrim.canFitItem(data.name) then
+      turtle.dig()
+      itemsPickedUp = itemsPickedUp + 1
+    end
+  end
+  forward()
+  if turtle.detectUp() then
+    didDig = true
+    local successUp, dataUp = turtle.inspectUp()
+    if successUp and ccqPrim.canFitItem(dataUp.name) then
+      turtle.digUp()
+      itemsPickedUp = itemsPickedUp + 1
+    end
+  end
+  if turtle.detectDown() then
+    didDig = true
+    local successDn, dataDn = turtle.inspectDown()
+    if successDn and ccqPrim.canFitItem(dataDn.name) then
+      turtle.digDown()
+      itemsPickedUp = itemsPickedUp + 1
+    end
+  end
+  if didDig == false then
+    -- Nothing was dug up so we should skip the item check
+    return -1
+  end
+  print("[DigForward] Picked up items: " .. itemsPickedUp)
+  return itemsPickedUp
 end
 
 -- Move the turtle down {times}. If there are blocks in the way it will
@@ -234,147 +256,21 @@ function digDown(times)
   return true
 end
 
--- Digs the 3 blocks in front of the turtle and moves forward
--- Returns the number of items it was able to pick up
--- If the turtle returns 0 enough its suggestive there's nothing left for it to fit
-function digForward() 
-  local itemsPickedUp = 0
-  local didDig = false
-  if turtle.detect() then
-    didDig = true
-    local success, data = turtle.inspect()
-    if success and canFitItem(data.name) then
-      turtle.dig()
-      itemsPickedUp = itemsPickedUp + 1
+-- Move the Bot Forward, updating the locRef with the result
+function forward() 
+  if turtle.forward() then
+    if currentDir == 'N' then
+      currentLoc.z = currentLoc.z + 1
+    elseif currentDir == 'S' then
+      currentLoc.z = currentLoc.z - 1
+    elseif currentDir == 'E' then
+      currentLoc.x = currentLoc.x + 1
+    else
+      currentLoc.x = currentLoc.x - 1
     end
+    return true
   end
-  forward()
-  if turtle.detectUp() then
-    didDig = true
-    local successUp, dataUp = turtle.inspectUp()
-    if successUp and canFitItem(dataUp.name) then
-      turtle.digUp()
-      itemsPickedUp = itemsPickedUp + 1
-    end
-  end
-  if turtle.detectDown() then
-    didDig = true
-    local successDn, dataDn = turtle.inspectDown()
-    if successDn and canFitItem(dataDn.name) then
-      turtle.digDown()
-      itemsPickedUp = itemsPickedUp + 1
-    end
-  end
-  if didDig == false then
-    -- Nothing was dug up so we should skip the item check
-    return -1
-  end
-  print("[DigForward] Picked up items: " .. itemsPickedUp)
-  return itemsPickedUp
-end
-
--- Travel the given number of units in the given direction
--- units maybe positive or negative, it doesn't matter
-function travel(units, direction)
-  if units ~= 0 then
-    if direction ~= 'U' and direction ~= 'D' then
-      -- Rotate when on cartesian plane
-      rotate(direction)
-    end
-    for i = 1, math.abs(units) do
-      if direction == 'U' then
-        turtle.up()
-      elseif direction == 'D' then
-        turtle.down()
-      else
-        turtle.forward()
-      end
-    end
-  end
-end
-
--- Rotate the turtle until it faces the given Dir
-function rotate(direction)
-  if currentDir == direction then
-    return
-  end
-  turtle.turnLeft()
-  currentDir = LEFT_DIR[currentDir]
-  rotate(direction)
-end
-
--- Computes the cost to travel from current location to the given loc tuple
-function costToDest(loc) 
-  -- manhattan distance: |x2-x1| + |y2-y1| + |z2-z1|
-  return math.abs(currentLoc.x - loc.x) + math.abs(currentLoc.y - loc.y) + math.abs(currentLoc.z - loc.z)
-end
-
--- Checks inventory fullness against the given item for space
--- Returning true if the item could be fit
-function canFitItem(itemName) 
-  for i = 1, 16 do
-    turtle.select(i)
-    local slot = turtle.getItemDetail(i)
-    if slot == nil or (slot and slot.name == itemName and turtle.getItemSpace(i) ~= 0) then
-      turtle.select(1)
-      return true
-    end
-  end
-  turtle.select(1)
-  print("[Fit] Cannot fit Item")
   return false
-end
-
--- Determine if there is enough fuel left to execute an action that consumes one fuel (eg move forward)
--- after arriving at the destionation (the given cost). This will implicitly refuel the turtle as 
--- much as it can before computing the boolean
---
--- Consumes: costToDest -- the cost to move to the destination (see costToDest function)
---
--- return true if so, false if not
-function hasFuelToMove(costToDest) 
-  refuel()
-  return turtle.getFuelLevel() - costToDest >= 1
-end
-
-
--- Attempts to consume anything from the inventory to increase fuel level.
--- Since it's not plausible to detect how much something is worth in fuel
--- this method instead naively tries to increase fuel level one by one until
--- the level is unchanged or maxed out, meaning there's no more fuel to be consumed.
--- 
--- To be conservative this will only run when fuel is at 75%
-function refuel() 
-  local currentLevel = turtle.getFuelLevel()
-  local fuelLimit = turtle.getFuelLimit()
-  if currentLevel > 1000 then
-    return
-  end
-  print("[Refuel] Fuel Level: "..currentLevel.." / "..fuelLimit)
-  repeat 
-    local consumedSomething = false
-    for i = 1, 16 do
-      turtle.select(i)
-      if turtle.refuel(0) then
-        turtle.refuel(1)
-        consumedSomething = true
-        break
-      end
-    end
-    turtle.select(1)
-    if consumedSomething == false then
-      print("[Refuel] No more fuel to consume")
-      break
-    end
-    newLevel = turtle.getFuelLevel()
-    print("[Refuel] Fuel Level: " .. newLevel)
-  until newLevel > fuelLimit * 0.75
-end
-
-function copyLocToLoc(a, b)
-  a.x = b.x
-  a.y = b.y
-  a.z = b.z
 end
 
 mainLoop()
