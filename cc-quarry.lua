@@ -190,7 +190,7 @@ function travel(units, direction)
   if units ~= 0 then
     if direction ~= 'U' and direction ~= 'D' then
       -- Rotate when on cartesian plane
-      currentDir = rotate(currentDir, direction)
+      currentDir = ccqPrim.rotate(currentDir, direction)
     end
     for i = 1, math.abs(units) do
       if direction == 'U' then

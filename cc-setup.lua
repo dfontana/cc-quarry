@@ -22,7 +22,6 @@ end
 
 download('cc-quarry', 'ccq')
 download('api/cc-quarry-arguments', 'ccqArg')
-download('api/cc-quarry-helpers', 'ccqHelp')
 download('api/cc-quarry-primitives', 'ccqPrim')
 download('api/cc-quarry-utils', 'ccqUtil')
 
