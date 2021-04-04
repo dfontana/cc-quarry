@@ -53,9 +53,6 @@ function mainLoop()
 
   -- DEFECTS
   -- 1. Turtle digs one too many columns, can we do better?
-  -- 1. Updating is a royal PITA. Would be nice to autoupdate on run...
-  --    a. optionally from a branch name if we can do github...
-  -- 3. need to break up this file
   print("[Main] Going to "..ccqUtil.locString(END_LOC))
   while currentLoc.y >= END_LOC.y do
     layerRoutine()
